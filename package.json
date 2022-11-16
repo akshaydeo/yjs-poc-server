@@ -1,0 +1,25 @@
+{
+  "name": "yjs-poc-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon src/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "js-base64": "^3.7.2",
+    "socket.io": "^4.5.3",
+    "y-protocols": "^1.0.5",
+    "yjs": "^13.5.42"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}
