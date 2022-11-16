@@ -22,10 +22,12 @@ const io = new SocketIoServer({
 const app = express();
 const port = 8000;
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({
+    limit: '100mb'
+}));
 app.use(bodyParser.raw({
     inflate: true,
-    limit: '100mb',
+    limit: '100m',
     type: 'application/octet-stream'
 }))
 app.get('/doc', (req, resp) => {
@@ -36,37 +38,56 @@ app.get('/doc', (req, resp) => {
     });
 });
 
-app.post('/docupdate', (req, resp) => {
+// app.post('/docupdate', (req, resp) => {
+//     const update = req.body.update;
+//     const origin = req.body.origin;
+//     const patch = toUint8Array(update);
+//     Y.applyUpdate(doc, patch);
+//     console.log('pushing updates across', origin)
+//     const vector = fromUint8Array(Y.encodeStateVector(doc));
+//     Object.keys(socketIoClients).forEach(key => {
+//         socketIoClients[key].emit("updates", {
+//             update: update,
+//             origin: origin
+//         });
+
+//         socketIoClients[key].emit("base", {
+//             vector
+//         });
+//     })
+
+//     resp.send({
+//         success: true
+//     })
+// });
+
+app.post('/awareness', (req, resp) => {
     const update = req.body.update;
-    const origin = req.body.origin;
-    const patch = toUint8Array(update);
-    Y.applyUpdate(doc, patch);
-    console.log('pushing updates across',origin)
-    Object.keys(socketIoClients).forEach(key=>{
-        socketIoClients[key].emit("updates",{
+    awarenessProtocol.applyAwarenessUpdate(awareness, toUint8Array(update));
+    Object.keys(socketIoClients).forEach(key => {
+        socketIoClients[key].emit("awareness", {
             update: update,
-            origin: origin
         });
     })
-    
-    resp.send({
-        success: true
-    })
+    resp.send({});
 });
 
 app.post('/docupdate2', (req, resp) => {
     const updates = req.body.updates;
     const origin = req.body.origin;
-    updates.forEach(update => {
-        const patch = toUint8Array(update);
-        Y.applyUpdate(doc, patch);
-        console.log('pushing updates across',origin)
-        Object.keys(socketIoClients).forEach(key=>{
-            socketIoClients[key].emit("updates",{
-                update: update,
-                origin: origin
-            });
-        })
+    const megaUpdate = Y.mergeUpdates(updates.map((update) => toUint8Array(update)));
+    Y.applyUpdate(doc, megaUpdate);
+    console.log('pushing updates across', origin)
+    const vector = fromUint8Array(Y.encodeStateVectorFromUpdate(megaUpdate));
+    const update = fromUint8Array(megaUpdate);
+    Object.keys(socketIoClients).forEach(key => {
+        socketIoClients[key].emit("updates", {
+            update,
+            origin: origin
+        });
+        // socketIoClients[key].emit("base", {
+        //     vector
+        // });
     })
     resp.send({
         success: true
@@ -77,7 +98,8 @@ app.post('/docupdate2', (req, resp) => {
 
 io.on('connection', client => {
     socketIoClients[client.id] = client;
-    console.log('on connection',client.id);
+    console.log('on connection', client.id);
+    client.emit('awareness', { update: fromUint8Array(awarenessProtocol.encodeAwarenessUpdate(awareness, Array.from(awareness.getStates().keys()))) });
     client.on('disconnect', () => {
         delete socketIoClients[client.id];
         console.log('client disconnected');
