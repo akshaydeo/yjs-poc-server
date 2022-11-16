@@ -54,6 +54,25 @@ app.post('/docupdate', (req, resp) => {
     })
 });
 
+app.post('/docupdate2', (req, resp) => {
+    const updates = req.body.updates;
+    const origin = req.body.origin;
+    updates.forEach(update => {
+        const patch = toUint8Array(update);
+        Y.applyUpdate(doc, patch);
+        console.log('pushing updates across',origin)
+        Object.keys(socketIoClients).forEach(key=>{
+            socketIoClients[key].emit("updates",{
+                update: update,
+                origin: origin
+            });
+        })
+    })
+    resp.send({
+        success: true
+    })
+});
+
 // starting socket.io server on a separate port just for the sake of poc
 
 io.on('connection', client => {
