@@ -32,9 +32,7 @@ app.use(bodyParser.raw({
 }))
 app.get('/doc', (req, resp) => {
     resp.send({
-        state: doc.getText('monaco').toJSON(),
-        update: fromUint8Array(Y.encodeStateAsUpdate(doc)),
-        vector: fromUint8Array(Y.encodeStateVector(doc))
+        update: fromUint8Array(Y.encodeStateAsUpdate(doc)),        
     });
 });
 
@@ -84,10 +82,7 @@ app.post('/docupdate2', (req, resp) => {
         socketIoClients[key].emit("updates", {
             update,
             origin: origin
-        });
-        // socketIoClients[key].emit("base", {
-        //     vector
-        // });
+        });        
     })
     resp.send({
         success: true
